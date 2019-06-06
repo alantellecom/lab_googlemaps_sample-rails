@@ -5,6 +5,8 @@ class RoutersController < ApplicationController
   # GET /routers.json
   def index
     @routers = Router.all
+    load_routers
+    @mapa_api_key =Rails.application.credentials[Rails.env.to_sym][:mapa_api_key]
   end
 
   # GET /routers/1
@@ -60,6 +62,38 @@ class RoutersController < ApplicationController
       format.json { head :no_content }
     end
   end
+
+  def load_routers
+ 
+    @routers_default = Gmaps4rails.build_markers(Router.all) do |plot, marker|  
+       marker.lat plot.latitude  
+       marker.lng plot.longitude  
+ 
+       @online = rand(1..100)  
+       @onsite =   100 - @online
+ 
+       if @onsite >= 70  
+         url_bike = ActionController::Base.helpers.asset_path('bike.gif')   
+         @status = "quente"  
+       elsif @onsite <= 20     
+         url_bike = ActionController::Base.helpers.asset_path('bike.gif')
+         @staus= "frio"
+       else  
+         url_bike = ActionController::Base.helpers.asset_path('bike.gif')
+         @staus= "morno"
+       end 
+ 
+       marker.picture({  
+         "url" => url_bike,  
+         "width" => 50,  
+         "height" => 50  
+       })  
+ 
+       marker.infowindow render_to_string(:partial => "/routers/info",:locals => {:name => plot.name, :pessoas => @pessoas, :date => rand(1.hours.ago..Time.now), :onsite => @onsite, :online => @online })  
+   
+     end
+     #binding.pry
+   end
 
   private
     # Use callbacks to share common setup or constraints between actions.
